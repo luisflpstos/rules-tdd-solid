@@ -1,0 +1,656 @@
+---
+description: Mandatory SOLID design principles for creating, modifying, reviewing, refactoring, or debugging production code
+alwaysApply: true
+---
+
+# SOLID Software Design Skill
+
+## Purpose
+
+Use this skill whenever creating, modifying, reviewing, refactoring, or debugging production code.
+
+The goal is to ensure that software remains:
+
+* cohesive;
+* maintainable;
+* testable;
+* extensible;
+* understandable;
+* loosely coupled;
+* resistant to regressions.
+
+Apply the five SOLID principles as design guidelines:
+
+* **S — Single Responsibility Principle**
+* **O — Open/Closed Principle**
+* **L — Liskov Substitution Principle**
+* **I — Interface Segregation Principle**
+* **D — Dependency Inversion Principle**
+
+SOLID must guide design decisions without causing unnecessary abstractions, excessive fragmentation, speculative architecture, or overengineering.
+
+---
+
+# Mandatory Design Workflow
+
+Before implementing or modifying code:
+
+1. Understand the requested behavior and acceptance criteria.
+2. Inspect the existing architecture, conventions, modules, interfaces, and tests.
+3. Identify the business responsibility being changed.
+4. Identify which components are directly affected.
+5. Identify the current dependencies and coupling.
+6. Determine whether the change exposes an existing SOLID violation.
+7. Design the smallest maintainable solution.
+8. Implement the change using TDD whenever executable behavior is modified.
+9. Refactor only after the relevant tests pass.
+10. Validate the final design against all five SOLID principles.
+
+Do not introduce abstractions before understanding the concrete behavior that requires them.
+
+---
+
+# S — Single Responsibility Principle
+
+## Core Rule
+
+A class, module, function, service, or component should have one clear responsibility and one primary reason to change.
+
+A responsibility represents a business capability, technical concern, or cohesive area of behavior.
+
+## Required Behavior
+
+The agent must:
+
+1. Keep business rules separate from infrastructure concerns.
+2. Keep persistence logic separate from domain logic.
+3. Keep HTTP, CLI, messaging, or UI handling separate from use-case logic.
+4. Keep serialization and data mapping separate from business decisions.
+5. Keep notification delivery separate from the event or action that triggers it.
+6. Keep validation responsibilities explicit and appropriately located.
+7. Prefer small, cohesive functions that perform one understandable task.
+8. Name modules, classes, and functions according to their actual responsibility.
+
+## Warning Signs
+
+Review the design when:
+
+* a class has several unrelated dependencies;
+* a function performs validation, persistence, notification, and formatting;
+* a service changes for unrelated business requirements;
+* a module contains both business logic and framework-specific code;
+* a class name includes words such as `And`, `Manager`, `Helper`, `Utils`, or `Processor` without a precise responsibility;
+* a function requires many comments to explain separate processing stages;
+* tests require unrelated setup for a single behavior;
+* changing one requirement affects several unrelated behaviors in the same component.
+
+## Corrective Actions
+
+When a component has multiple responsibilities:
+
+1. Identify each distinct reason for change.
+2. Separate unrelated responsibilities into cohesive components.
+3. Define clear inputs and outputs.
+4. Preserve the original external behavior.
+5. Avoid splitting code merely to reduce line count.
+6. Keep logic together when it represents one cohesive business operation.
+
+## Restrictions
+
+Do not:
+
+* create one class per trivial line of code;
+* split cohesive business logic across arbitrary services;
+* treat small file size as proof of SRP compliance;
+* create generic utility modules as a destination for unrelated behavior;
+* separate code when the separation makes the use case harder to understand.
+
+The objective is cohesion, not the maximum possible number of files.
+
+---
+
+# O — Open/Closed Principle
+
+## Core Rule
+
+Software entities should support new behavior through extension without requiring repeated modification of stable, existing logic.
+
+## Required Behavior
+
+The agent must:
+
+1. Identify parts of the system that vary by type, provider, strategy, channel, or business rule.
+2. Encapsulate relevant variation behind a stable contract.
+3. Prefer composition, polymorphism, strategies, handlers, registries, or plugins when multiple implementations are expected.
+4. Keep stable orchestration logic independent from implementation-specific branches.
+5. Add new implementations without repeatedly editing central conditional structures.
+6. Preserve existing behavior while extending the system.
+
+## Warning Signs
+
+Review the design when:
+
+* every new provider requires another `if`, `else if`, or `switch` branch;
+* a central service must be modified whenever a new type is added;
+* adding a payment gateway changes checkout business logic;
+* adding a notification channel changes the main use case;
+* adding a file format changes stable processing logic;
+* enum values are mapped through large conditional blocks across several files;
+* unrelated features depend on the same growing dispatcher.
+
+## Corrective Actions
+
+When stable code is repeatedly modified to add variants:
+
+1. Identify the invariant orchestration behavior.
+2. Identify the behavior that varies.
+3. Define a focused contract for the variation.
+4. Move each variant into its own implementation.
+5. Inject or register implementations at the composition boundary.
+6. Add contract tests when multiple implementations share the same contract.
+
+## Restrictions
+
+Do not:
+
+* create an interface for every class;
+* introduce plugin systems for requirements that have only one stable implementation;
+* use inheritance only to avoid a conditional;
+* add generic frameworks for hypothetical future features;
+* preserve a poor abstraction merely because changing it would violate a literal interpretation of OCP.
+
+OCP applies primarily to genuine and recurring variation, not imagined future requirements.
+
+---
+
+# L — Liskov Substitution Principle
+
+## Core Rule
+
+Any implementation of an abstraction must be usable wherever that abstraction is expected without breaking correctness, contracts, or reasonable caller expectations.
+
+A subtype must honor the behavioral contract of its parent type or interface.
+
+## Required Behavior
+
+Every implementation must preserve:
+
+* valid input expectations;
+* output guarantees;
+* documented side effects;
+* error semantics;
+* invariants;
+* ordering guarantees;
+* nullability expectations;
+* state transition rules;
+* performance expectations when they are part of the contract.
+
+A subtype may accept broader inputs but must not require stricter preconditions than the parent contract.
+
+A subtype may provide stronger guarantees but must not weaken the guarantees established by the parent contract.
+
+## Warning Signs
+
+Review the design when a subtype:
+
+* throws `UnsupportedOperationException` for a required operation;
+* silently ignores a required method;
+* returns `null` when the contract guarantees a value;
+* changes the meaning of the operation;
+* requires inputs that the base contract considers valid to be rejected;
+* introduces unexpected side effects;
+* requires callers to check the concrete subtype;
+* forces callers to use `instanceof`, type assertions, or type-specific branching;
+* overrides behavior only to disable it;
+* violates state or data invariants established by the abstraction.
+
+## Corrective Actions
+
+When substitutability is broken:
+
+1. Reevaluate the abstraction.
+2. Move optional behavior into a separate capability.
+3. Prefer composition over incorrect inheritance.
+4. Split the hierarchy into accurate contracts.
+5. Remove methods that are not valid for every implementation.
+6. Add shared contract tests for all implementations.
+7. Verify that callers do not depend on concrete implementation details.
+
+## Contract Testing
+
+When multiple classes implement the same abstraction, create reusable contract tests that validate every implementation against the same expected behavior.
+
+Contract tests should verify:
+
+* valid operations;
+* invalid operations;
+* return types and values;
+* error behavior;
+* state changes;
+* idempotency where applicable;
+* side effects;
+* boundary cases.
+
+## Restrictions
+
+Do not:
+
+* use inheritance only for code reuse;
+* force an “is-a” relationship when only code sharing exists;
+* create subtypes that disable parent behavior;
+* change a public contract for the convenience of one implementation;
+* make callers aware of concrete subtype limitations.
+
+Prefer composition when the behavioral relationship is not genuinely substitutable.
+
+---
+
+# I — Interface Segregation Principle
+
+## Core Rule
+
+Consumers must not be forced to depend on methods or capabilities they do not use.
+
+Prefer small, cohesive, consumer-oriented contracts over large, generic interfaces.
+
+## Required Behavior
+
+The agent must:
+
+1. Define interfaces around consumer needs.
+2. Group methods that belong to the same capability.
+3. Separate reading, writing, administration, reporting, notification, or other independent capabilities when appropriate.
+4. Allow implementations to support only the capabilities they genuinely provide.
+5. Keep public contracts minimal.
+6. Avoid exposing infrastructure operations to business-layer consumers.
+7. Depend on the narrowest contract required by the use case.
+
+## Warning Signs
+
+Review the design when:
+
+* implementations contain empty methods;
+* methods throw “not supported” errors;
+* test doubles must implement many irrelevant methods;
+* consumers depend on broad repository or service interfaces;
+* a single interface contains unrelated read and write operations;
+* an implementation needs only one method from a large contract;
+* changing one method affects many unrelated implementations;
+* interface names are overly generic, such as `Service`, `Manager`, or `Repository`, without describing a capability.
+
+## Corrective Actions
+
+When an interface is too broad:
+
+1. Group methods by cohesive capability.
+2. Identify which consumers use each capability.
+3. Split the interface along consumer boundaries.
+4. Update consumers to depend only on required contracts.
+5. Allow implementations to compose multiple interfaces when needed.
+6. Preserve shared types only when they represent a real common contract.
+
+## Restrictions
+
+Do not:
+
+* create one-method interfaces automatically;
+* split interfaces without a real consumer boundary;
+* duplicate identical contracts in several modules without reason;
+* expose implementation details through narrowly named but technically coupled interfaces;
+* design interfaces around the methods of an existing concrete class.
+
+Interfaces must represent useful contracts, not mechanically mirror implementations.
+
+---
+
+# D — Dependency Inversion Principle
+
+## Core Rule
+
+High-level business policies must not depend directly on low-level technical details.
+
+Both high-level and low-level modules should depend on stable abstractions owned by the appropriate business boundary.
+
+## Required Behavior
+
+The agent must:
+
+1. Keep business rules independent from frameworks and external services.
+2. Define contracts at the boundary where the dependency is consumed.
+3. Inject external dependencies instead of constructing them inside business logic.
+4. Keep dependency composition in an application entry point, bootstrap module, container, or factory.
+5. Place database, API, queue, cache, filesystem, and framework details behind explicit boundaries.
+6. Ensure that domain and application layers can be tested without real external infrastructure.
+7. Keep external SDK types from leaking unnecessarily into domain contracts.
+8. Map external data into application-owned structures.
+
+## Common External Dependencies
+
+Apply dependency inversion to dependencies such as:
+
+* databases;
+* repositories;
+* payment providers;
+* messaging services;
+* email providers;
+* WhatsApp providers;
+* HTTP clients;
+* file storage;
+* queues;
+* clocks;
+* UUID generators;
+* random generators;
+* analytics tools;
+* feature-flag systems;
+* third-party SDKs.
+
+## Warning Signs
+
+Review the design when:
+
+* a use case instantiates a database repository directly;
+* domain logic imports framework modules;
+* a service creates its own HTTP client;
+* business tests require network access;
+* switching providers requires changing business rules;
+* third-party response objects are returned directly from application services;
+* environment variables are read throughout the domain layer;
+* static global dependencies prevent isolated testing;
+* infrastructure exceptions leak through business contracts;
+* constructors perform network, database, or filesystem operations.
+
+## Corrective Actions
+
+When high-level code depends on implementation details:
+
+1. Identify the high-level policy.
+2. Identify the low-level detail.
+3. Define the smallest contract required by the policy.
+4. Make the infrastructure implementation satisfy that contract.
+5. Inject the implementation through the composition root.
+6. Map infrastructure failures into application-level errors when appropriate.
+7. Add tests using fakes or controlled test implementations.
+8. Keep integration tests for the real adapter.
+
+## Dependency Injection Rules
+
+Prefer constructor injection for required dependencies.
+
+Use method injection when the dependency is specific to a single operation.
+
+Avoid hidden dependency resolution through global service locators.
+
+Dependencies must be explicit enough that the component's requirements can be understood from its public construction contract.
+
+## Restrictions
+
+Do not:
+
+* add interfaces solely to make mocking easier;
+* create abstractions that expose the exact API of a vendor SDK;
+* inject simple immutable values that belong naturally to the object;
+* hide business dependencies inside global containers;
+* use dependency injection frameworks as a substitute for proper boundaries;
+* invert dependencies that are stable language-level primitives or pure value objects.
+
+Dependency inversion must protect business policy from unstable technical details.
+
+---
+
+# SOLID and Functional Code
+
+SOLID principles are not limited to class-based object-oriented code.
+
+When using functional or procedural styles, apply the same design goals:
+
+* keep functions cohesive;
+* separate pure logic from side effects;
+* pass dependencies explicitly;
+* use stable function contracts;
+* compose behavior instead of modifying central logic;
+* avoid large generic parameter objects;
+* preserve substitutability between interchangeable functions;
+* keep infrastructure at application boundaries.
+
+Do not force classes or inheritance into a codebase when functions, modules, algebraic data types, or composition provide a clearer solution.
+
+---
+
+# Architecture Boundaries
+
+When the project uses layered, hexagonal, clean, modular, or domain-oriented architecture, preserve the dependency direction.
+
+A typical dependency direction is:
+
+```text
+Infrastructure → Application → Domain
+```
+
+The domain must not depend on:
+
+* web frameworks;
+* ORM models;
+* database drivers;
+* external SDKs;
+* controllers;
+* transport schemas;
+* infrastructure configuration.
+
+The application layer may coordinate domain behavior but should depend on ports or contracts for external operations.
+
+Infrastructure adapters may depend on application or domain contracts to implement them.
+
+Do not restructure the entire project solely to reproduce a textbook architecture. Respect the existing architecture unless it prevents the requested change or causes measurable maintenance problems.
+
+---
+
+# Relationship With TDD
+
+SOLID and TDD must reinforce each other.
+
+Use TDD to reveal design problems:
+
+* difficult test setup may indicate excessive coupling;
+* many unrelated mocks may indicate an SRP violation;
+* inability to replace a dependency may indicate a DIP violation;
+* different behavior between implementations may indicate an LSP violation;
+* large test doubles may indicate an ISP violation;
+* repeated test changes when adding variants may indicate an OCP violation.
+
+For every behavioral change:
+
+1. Write a failing test.
+2. Implement the minimum behavior.
+3. Refactor toward a SOLID design.
+4. Keep all tests passing.
+5. Avoid introducing abstractions that are not required by the tests or current design.
+
+Do not treat testability as proof that the design follows SOLID. A design can be testable while still being unnecessarily complex or poorly modeled.
+
+---
+
+# Refactoring Rules
+
+When identifying a SOLID violation in existing code:
+
+1. Confirm that the violation affects the requested change, correctness, testability, or maintainability.
+2. Add characterization tests when existing behavior is not adequately protected.
+3. Refactor in small increments.
+4. Preserve external behavior unless a behavior change is explicitly required.
+5. Run tests after every meaningful structural change.
+6. Avoid unrelated architectural rewrites.
+7. Document important design decisions when the reason is not obvious.
+
+Do not refactor the entire surrounding system merely because a local violation exists.
+
+Prefer the smallest refactoring that creates a clear and maintainable design.
+
+---
+
+# Overengineering Prevention
+
+SOLID is a set of design principles, not a requirement to maximize abstraction.
+
+The agent must not introduce:
+
+* interfaces with only one implementation and no identified boundary;
+* abstract base classes without valid substitutable implementations;
+* factories that only wrap a constructor;
+* strategy patterns for logic that is unlikely to vary;
+* repositories for data that has no persistence boundary;
+* excessive dependency injection;
+* generic engines for a single concrete use case;
+* unnecessary layers;
+* pass-through services with no policy or transformation;
+* deep inheritance hierarchies;
+* speculative extension points.
+
+Before adding an abstraction, answer:
+
+1. What concrete variation or boundary does it represent?
+2. Which consumer needs this contract?
+3. What coupling does it remove?
+4. How does it improve the current implementation?
+5. Is composition simpler?
+6. Could the abstraction be introduced later without significant cost?
+
+If these questions cannot be answered clearly, prefer the simpler implementation.
+
+---
+
+# Prohibited Actions
+
+The agent must not:
+
+* create god classes or god services;
+* combine business logic with infrastructure details;
+* use inheritance only to reuse code;
+* create subtypes that violate parent contracts;
+* force implementations to support irrelevant methods;
+* instantiate infrastructure dependencies inside domain or use-case logic;
+* expose third-party SDK types as domain models without justification;
+* add central conditionals for every new implementation;
+* create abstractions based only on hypothetical future requirements;
+* perform broad architectural rewrites unrelated to the task;
+* claim SOLID compliance based only on file size or interface usage;
+* weaken tests to accommodate a flawed design;
+* replace understandable code with patterns that make the behavior harder to follow.
+
+---
+
+# Code Review Checklist
+
+Before completing a task, verify the following.
+
+## Single Responsibility
+
+* Does each changed component have one cohesive responsibility?
+* Is there one primary reason for each component to change?
+* Are business logic and infrastructure concerns separated?
+* Are functions focused and understandable?
+
+## Open/Closed
+
+* Can expected variants be added without repeatedly modifying stable orchestration?
+* Is variation isolated behind an appropriate contract?
+* Did the solution avoid speculative extension points?
+
+## Liskov Substitution
+
+* Can every implementation safely replace the abstraction?
+* Are preconditions, postconditions, invariants, and error semantics preserved?
+* Do callers avoid checking concrete implementation types?
+
+## Interface Segregation
+
+* Does each consumer depend only on methods it uses?
+* Are contracts cohesive and consumer-oriented?
+* Do implementations avoid unsupported or empty methods?
+
+## Dependency Inversion
+
+* Are high-level rules independent from low-level technical details?
+* Are external dependencies explicit?
+* Are dependencies injected at the correct boundary?
+* Can business logic be tested without real infrastructure?
+
+## Simplicity
+
+* Is the design simpler than the problem it solves?
+* Does every abstraction have a current purpose?
+* Is composition used instead of unnecessary inheritance?
+* Does the solution follow existing project conventions?
+
+---
+
+# Validation Requirements
+
+Before considering the task complete, run all validations available in the project:
+
+1. tests created or modified for the behavior;
+2. tests for the affected module;
+3. contract tests for interchangeable implementations;
+4. integration tests for changed adapters;
+5. the complete test suite when feasible;
+6. linting;
+7. type checking;
+8. build validation;
+9. architecture or dependency-boundary checks when available.
+
+If a validation cannot be executed, report:
+
+* which command was not executed;
+* why it could not be executed;
+* what risk remains;
+* what still needs to be validated.
+
+Never claim that a validation passed unless it was actually executed.
+
+---
+
+# Definition of Done
+
+A task is complete only when:
+
+* the requested behavior is implemented;
+* relevant tests pass;
+* the design has been reviewed against all five SOLID principles;
+* responsibilities are cohesive;
+* extension points are introduced only where justified;
+* implementations preserve their contracts;
+* consumers depend on focused interfaces;
+* business policies do not directly depend on unstable infrastructure;
+* no unnecessary abstraction was introduced;
+* no unrelated architecture was changed;
+* naming clearly communicates responsibilities;
+* the code follows existing project conventions;
+* remaining limitations are explicitly reported.
+
+---
+
+# Agent Final Report
+
+At the end of the task, report:
+
+1. **Behavior implemented**
+2. **Tests added or modified**
+3. **SOLID principles applied**
+4. **Responsibilities separated**
+5. **Abstractions or contracts introduced**
+6. **Dependencies inverted or injected**
+7. **Refactoring performed**
+8. **Validation commands executed**
+9. **Result of each validation**
+10. **Remaining limitations or risks**
+
+When a principle was deliberately not applied, explain why the simpler design was more appropriate.
+
+---
+
+# Core Rule
+
+> Design software so that responsibilities remain cohesive, behavior can be extended safely, implementations preserve their contracts, consumers depend only on what they use, and business policies remain independent from technical details.
+
+Apply SOLID pragmatically:
+
+**understand the behavior → identify responsibilities and boundaries → implement the simplest design → validate contracts → refactor → prevent overengineering.**

@@ -1,0 +1,12 @@
+---
+description: Agent workflow constraints — pnpm, no branch/worktree, no commit/push, SOLID, TDD
+alwaysApply: true
+---
+
+# Agent Constraints
+
+- Always use pnpm on project use pnpm
+- Dont create new branch or worktree
+- Never commit or push
+- Always use SOLID rule
+- Always use TDD rule

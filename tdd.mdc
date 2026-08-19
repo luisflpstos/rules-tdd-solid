@@ -1,0 +1,194 @@
+---
+description: Mandatory Test-Driven Development workflow for all executable behavior changes
+globs:
+alwaysApply: true
+---
+
+# Mandatory Rule: Test-Driven Development (TDD)
+
+All functional code must be developed using Test-Driven Development (TDD).
+
+The agent must not implement a feature, bug fix, or behavioral change before creating an automated test that describes the expected result.
+
+## Mandatory cycle: Red → Green → Refactor
+
+For each behavior, work in small cycles.
+
+### 1. Understand the behavior
+
+Before changing code:
+
+- Analyze the requirement and acceptance criteria.
+- Identify the expected observable behavior.
+- Review existing tests, patterns, conventions, and project tools.
+- Break large changes into smaller, testable behaviors.
+- Do not implement behavior based on assumptions absent from the requirement or existing code.
+
+### 2. RED — write a failing test
+
+Before modifying production code:
+
+- Create or update an automated test that represents the desired behavior.
+- Run the test and confirm that it fails for the expected reason.
+- Ensure the failure is caused by the missing behavior, not by syntax, configuration, imports, fixtures, environment, or dependencies.
+- If the test already passes, revise it until it fails for the correct reason.
+
+### 3. GREEN — implement the minimum necessary
+
+After confirming the failure:
+
+- Write only the production code necessary to make the test pass.
+- Do not implement speculative or future requirements.
+- Avoid extensive refactoring during this stage.
+- Run the new test again and confirm that it passes.
+- Run related tests to detect regressions.
+
+Prefer the simplest implementation that satisfies the tested behavior. Do not introduce premature abstractions.
+
+### 4. REFACTOR — improve without changing behavior
+
+When tests are passing:
+
+- Remove duplication.
+- Improve names and readability.
+- Simplify conditionals and complex structures.
+- Separate responsibilities when necessary.
+- Refactor tests when this improves their clarity.
+- Run the relevant tests after each meaningful change.
+
+Refactoring must not add behavior. Any new behavior requires a new cycle beginning with a failing test.
+
+## Bug fixes
+
+Every bug fix must begin with an automated regression test:
+
+1. Reproduce the bug in a test.
+2. Run it and confirm that it fails.
+3. Implement the smallest possible fix.
+4. Confirm that the regression test passes.
+5. Run the affected suite and, when feasible, the complete suite.
+6. Refactor only after all tests pass.
+
+Never fix a bug without leaving a test that prevents it from recurring.
+
+## Legacy code
+
+When changing code without adequate coverage:
+
+- Create characterization tests for the current behavior.
+- Confirm that they pass before changing the code.
+- Create a new failing test for the desired behavior.
+- Make the change through the normal TDD cycle.
+- Preserve behavior outside the requirement's scope.
+
+Do not refactor legacy code before creating a minimum automated safety net.
+
+## Testing strategy
+
+Choose the lowest testing level that properly validates the behavior:
+
+- **Unit tests:** business rules, functions, classes, use cases, and transformations.
+- **Integration tests:** databases, repositories, queues, APIs, files, caches, and module communication.
+- **Contract tests:** input/output formats, webhooks, and external integrations.
+- **End-to-end tests:** critical flows that require complete-system validation.
+
+Prioritize fast and deterministic tests. Test observable behavior and public contracts instead of coupling tests to implementation details.
+
+Use mocks, stubs, and fakes for external services, clocks, randomness, queues, remote storage, third-party APIs, and slow or nondeterministic operations. Do not use test doubles to hide design problems or replace important real integration behavior.
+
+## Minimum relevant cases
+
+When applicable, cover:
+
+- expected behavior;
+- invalid inputs;
+- empty or missing values;
+- minimum and maximum boundaries;
+- dependency failures;
+- missing records;
+- duplicates;
+- authorization and permissions;
+- idempotency;
+- concurrency;
+- persistence;
+- input and output contracts;
+- regressions in existing behavior.
+
+Do not add artificial cases merely to increase coverage. Each test must protect a relevant behavior or risk.
+
+## Prohibited actions
+
+The agent must not:
+
+- implement production code before the test;
+- write tests only after completing the feature;
+- change assertions merely to accommodate incorrect code;
+- remove, skip, ignore, or weaken tests to make the suite pass;
+- hardcode values solely to satisfy a test;
+- test only the happy path;
+- ignore relevant errors, boundaries, or invalid inputs;
+- add features not covered by tests;
+- consider a task complete while tests are failing;
+- claim tests passed without actually running them;
+- replace tests with linting, type checking, or builds;
+- modify unrelated code without a demonstrated need.
+
+If an existing test is incorrect, explain the technical problem before changing it and preserve valid expected behavior.
+
+## Mandatory validation
+
+Before considering the task complete, run the validations supported by the project, in proportion to the change:
+
+- the created or modified test;
+- tests for the affected module;
+- the complete test suite when executable;
+- linting;
+- type checking (`pnpm build` in this repository);
+- the build;
+- any additional repository-specific checks.
+
+For this repository, follow the commands and test boundaries documented in `AGENTS.md`, including `pnpm test:unit`, `pnpm test:int`, `pnpm test:e2e`, `pnpm lint:check`, and `pnpm build` as applicable.
+
+If a validation cannot be executed, report which command was skipped, why it was skipped, the remaining risk, and what still needs validation.
+
+## Exceptions
+
+TDD is not applicable only to changes that do not modify executable behavior, such as documentation, comments, formatting, static text, exclusively visual files, or metadata without runtime impact. Even then, run applicable linting, builds, schema validation, or visual tests.
+
+Exploratory prototypes may bypass TDD only when explicitly identified as disposable. No exploratory code may be delivered as a final implementation without being rewritten or validated through the TDD cycle.
+
+## Definition of done
+
+A task is complete only when:
+
+- every new behavior has an automated test;
+- the new test was observed failing before implementation;
+- the test passed after implementation;
+- bugs have regression tests;
+- all related tests pass;
+- the complete suite passes when executable;
+- linting, type checking, and the build pass when available;
+- no tests were removed or weakened without justification;
+- no functional code exists without a demonstrated need;
+- refactoring preserved behavior;
+- the code follows project standards and conventions.
+
+## Final report
+
+When completing a task, objectively report:
+
+- the behavior implemented;
+- tests added or modified;
+- evidence from the RED stage;
+- the minimum implementation completed during GREEN;
+- refactoring performed;
+- validation commands and results;
+- limitations or pending validations.
+
+## Core rule
+
+No production behavior may be created or changed unless a failing automated test describing that behavior exists first.
+
+Always work in small increments:
+
+> write a test → confirm the failure → implement the minimum → confirm success → refactor → repeat
